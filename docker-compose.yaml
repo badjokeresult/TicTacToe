@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  web-api:
+    container_name: web-api
+    image: web-api
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "3500:80"
+    restart: unless-stopped
+  
+  database:
+    image: postgres:latest
+    container_name: database
+    environment:
+      POSTGRES_USER: tic_tac_toe_user
+      POSTGRES_PASSWORD: t1ct4ct0e
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+  
+networks:
+  postgres:
+    driver: bridge
