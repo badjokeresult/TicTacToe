@@ -23,15 +23,11 @@
   - /create - adds a new game object
   - /update - replaces an old game object by a new one
   - /delete/{id} - removes a player object by id
-
-## Warning:
-### This API doesn't check the correctness of the given params like:
+  
+### This API also checks the correctness of the given params like:
 - Existence of players with given ids in a game record
 - The situation when both players' ids are equal in one game record
 - The situation when both players' cells are invalid (cells' values interception)
-
-### All of these situations are not being checked because I believe that such checks should be realized by a client's programs that uses this API
-### But I also believe that here is a field for discussions so I'll be glad to get an another point of view
 
 ## Here is a little non-professional structure of this API
 ![img.png](img.png)
