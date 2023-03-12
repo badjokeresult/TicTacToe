@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-using TicTacToe.Models;
 using TicTacToe.DatabaseContext;
+using TicTacToe.Models;
 
 namespace TicTacToe.Controllers.GameControllers;
 
@@ -21,50 +21,55 @@ public class GameController: ControllerBase, IGameController
 
     [HttpGet(Name = "GetGameById")]
     [Route("/get/{id}")]
-    public async Task<ActionResult<Game>> GetAsync(int id)
+    public async Task<IResult> GetAsync(int id)
     {
         var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == id);
 
         if (game == null)
         {
             _logger.LogWarning($"Game data with id = {id} not found");
-            return NotFound();
+            return Results.NotFound();
         }
 
         _logger.LogInformation($"Game data with id = {id} received");
-        return game;
+        return Results.Json(game);
     }
 
     [HttpGet(Name = "GetAllGames")]
     [Route("/get")]
-    public async Task<ActionResult<IEnumerable<Game>>> GetAsync()
+    public async Task<IResult> GetAsync()
     {
         var games = await _context.Games.ToListAsync();
 
         if (games.Count == 0)
         {
             _logger.LogWarning("There is no game data in db");
-            return NotFound();
+            return Results.NotFound();
         }
         
         _logger.LogInformation("All games data received");
-        return games;
+        return Results.Json(games);
     }
 
     [HttpPost(Name = "CreateGame")]
     [Route("/create")]
-    public async Task<ActionResult> CreateAsync(Game game)
+    public async Task<IResult> CreateAsync(string data)
     {
+        var game = ConvertFromJson(data);
+
+        if (game == null)
+            return Results.BadRequest();
+        
         if (!AreBothPlayersDifferent(game))
         {
             _logger.LogError("There are cannot be two similar players in one game");
-            return BadRequest();
+            return Results.BadRequest();
         }
 
         if (!AreCellsNotIntercepted(game))
         {
             _logger.LogError("Cells values of both players are intersected");
-            return BadRequest();
+            return Results.BadRequest();
         }
         
         await _context.Games.AddAsync(game);
@@ -72,23 +77,28 @@ public class GameController: ControllerBase, IGameController
 
         _logger.LogInformation($"Game data with id = {game.Id} created");
         
-        return Ok();
+        return Results.Ok();
     }
 
     [HttpPut(Name = "UpdateGame")]
     [Route("/update")]
-    public async Task<ActionResult> UpdateAsync(Game game)
+    public async Task<IResult> UpdateAsync(string data)
     {
+        var game = ConvertFromJson(data);
+
+        if (game == null)
+            return Results.BadRequest();
+        
         if (!AreBothPlayersDifferent(game))
         {
             _logger.LogError("There are cannot be two similar players in one game");
-            return BadRequest();
+            return Results.BadRequest();
         }
 
         if (!AreCellsNotIntercepted(game))
         {
             _logger.LogError("Cells values of both players are intersected");
-            return BadRequest();
+            return Results.BadRequest();
         }
         
         var oldGame = await _context.Games.FirstOrDefaultAsync(g => g.Id == game.Id);
@@ -96,7 +106,7 @@ public class GameController: ControllerBase, IGameController
         if (oldGame == null)
         {
             _logger.LogWarning($"Game data with id = {game.Id} not found");
-            return NotFound();
+            return Results.NotFound();
         }
 
         var newGame = _context.Games.Update(oldGame);
@@ -106,26 +116,26 @@ public class GameController: ControllerBase, IGameController
         await _context.SaveChangesAsync();
 
         _logger.LogInformation($"Game data with id = {game.Id} updated");
-        return Ok();
+        return Results.Ok();
     }
 
     [HttpDelete(Name = "DeleteGameById")]
     [Route("/delete/{id}")]
-    public async Task<ActionResult> DeleteAsync(int id)
+    public async Task<IResult> DeleteAsync(int id)
     {
         var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == id);
 
         if (game == null)
         {
             _logger.LogWarning($"Game data with id = {id} not found");
-            return NotFound();
+            return Results.NotFound();
         }
 
         _context.Games.Remove(game);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation($"Game data with id = {id} deleted");
-        return Ok();
+        return Results.Ok();
     }
 
     private bool AreBothPlayersDifferent(Game game) => 
@@ -138,5 +148,18 @@ public class GameController: ControllerBase, IGameController
 
         firstPlayerCells.IntersectWith(secondPlayerCells);
         return firstPlayerCells.Count == 0;
+    }
+
+    private Game? ConvertFromJson(string data)
+    {
+        try
+        {
+            return new Game(data);
+        }
+        catch (NullReferenceException)
+        {
+            _logger.LogError("Necessary fields not found");
+            return null;
+        }
     }
 }
