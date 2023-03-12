@@ -7,7 +7,7 @@ using TicTacToe.Models;
 namespace TicTacToe.Controllers.PlayerControllers;
 
 [ApiController]
-[Route("api/v1/player")]
+[Route("api/v1/[controller]")]
 public class PlayerController: ControllerBase, IPlayerController
 {
     private readonly ILogger<PlayerController> _logger;
@@ -19,8 +19,7 @@ public class PlayerController: ControllerBase, IPlayerController
         _context = context;
     }
 
-    [HttpGet(Name = "GetPlayerById")]
-    [Route("/get/{id}")]
+    [HttpGet("get/{id}")]
     public async Task<IResult> GetAsync(int id)
     {
         var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == id);
@@ -35,8 +34,7 @@ public class PlayerController: ControllerBase, IPlayerController
         return Results.Json(player);
     }
 
-    [HttpGet(Name = "GetAllPlayers")]
-    [Route("/get")]
+    [HttpGet("get")]
     public async Task<IResult> GetAsync()
     {
         var players = await _context.Players.ToListAsync();
@@ -51,31 +49,24 @@ public class PlayerController: ControllerBase, IPlayerController
         return Results.Json(players);
     }
 
-    [HttpPost(Name = "CreatePlayer")]
-    [Route("/create")]
-    public async Task<IResult> CreateAsync(string data)
+    [HttpPost("create")]
+    public async Task<IResult> CreateAsync(Player player)
     {
-        var player = ConvertFromJson(data);
-        if (player == null)
-            return Results.BadRequest();
-        
         if (!AreCellsValuesCorrect(player))
+        {
+            _logger.LogWarning("Cells values are not in range 0-2");
             return Results.BadRequest();
-        
+        }
+
         await _context.Players.AddAsync(player);
         await _context.SaveChangesAsync();
 
         return Results.Ok();
     }
-
-    [HttpPut(Name = "UpdatePlayer")]
-    [Route("/update")]
-    public async Task<IResult> UpdateAsync(string data)
+    
+    [HttpPut("update")]
+    public async Task<IResult> UpdateAsync(Player player)
     {
-        var player = ConvertFromJson(data);
-        if (player == null)
-            return Results.BadRequest();
-        
         if (!AreCellsValuesCorrect(player))
             return Results.BadRequest();
         
@@ -97,8 +88,7 @@ public class PlayerController: ControllerBase, IPlayerController
         return Results.Ok();
     }
 
-    [HttpDelete(Name = "DeletePlayerById")]
-    [Route("/delete/{id}")]
+    [HttpDelete("delete/{id}")]
     public async Task<IResult> DeleteAsync(int id)
     {
         var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == id);
@@ -120,8 +110,8 @@ public class PlayerController: ControllerBase, IPlayerController
     {
         foreach (var cell in player.Cells)
         {
-            if (cell.Item1 > 2 || cell.Item1 < 0
-                               || cell.Item2 > 2 || cell.Item2 < 0)
+            if (cell[0] > 2 || cell[0] < 0
+                               || cell[1] > 2 || cell[1] < 0)
             {
                 _logger.LogError("Invalid cells values were given");
                 return false;
@@ -129,18 +119,5 @@ public class PlayerController: ControllerBase, IPlayerController
         }
 
         return true;
-    }
-
-    private Player? ConvertFromJson(string data)
-    {
-        try
-        {
-            return new Player(data);
-        }
-        catch (NullReferenceException)
-        {
-            _logger.LogCritical("Necessary fields not found");
-            return null;
-        }
     }
 }

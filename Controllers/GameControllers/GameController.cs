@@ -18,9 +18,8 @@ public class GameController: ControllerBase, IGameController
         _logger = logger;
         _context = context;
     }
-
-    [HttpGet(Name = "GetGameById")]
-    [Route("/get/{id}")]
+    
+    [HttpGet("get/{id}")]
     public async Task<IResult> GetAsync(int id)
     {
         var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == id);
@@ -34,9 +33,8 @@ public class GameController: ControllerBase, IGameController
         _logger.LogInformation($"Game data with id = {id} received");
         return Results.Json(game);
     }
-
-    [HttpGet(Name = "GetAllGames")]
-    [Route("/get")]
+    
+    [HttpGet("get-all")]
     public async Task<IResult> GetAsync()
     {
         var games = await _context.Games.ToListAsync();
@@ -50,16 +48,10 @@ public class GameController: ControllerBase, IGameController
         _logger.LogInformation("All games data received");
         return Results.Json(games);
     }
-
-    [HttpPost(Name = "CreateGame")]
-    [Route("/create")]
-    public async Task<IResult> CreateAsync(string data)
+    
+    [HttpPost("create")]
+    public async Task<IResult> CreateAsync(Game game)
     {
-        var game = ConvertFromJson(data);
-
-        if (game == null)
-            return Results.BadRequest();
-        
         if (!AreBothPlayersDifferent(game))
         {
             _logger.LogError("There are cannot be two similar players in one game");
@@ -80,15 +72,9 @@ public class GameController: ControllerBase, IGameController
         return Results.Ok();
     }
 
-    [HttpPut(Name = "UpdateGame")]
-    [Route("/update")]
-    public async Task<IResult> UpdateAsync(string data)
+    [HttpPut("update")]
+    public async Task<IResult> UpdateAsync(Game game)
     {
-        var game = ConvertFromJson(data);
-
-        if (game == null)
-            return Results.BadRequest();
-        
         if (!AreBothPlayersDifferent(game))
         {
             _logger.LogError("There are cannot be two similar players in one game");
@@ -119,8 +105,7 @@ public class GameController: ControllerBase, IGameController
         return Results.Ok();
     }
 
-    [HttpDelete(Name = "DeleteGameById")]
-    [Route("/delete/{id}")]
+    [HttpDelete("delete/{id}")]
     public async Task<IResult> DeleteAsync(int id)
     {
         var game = await _context.Games.FirstOrDefaultAsync(g => g.Id == id);
@@ -148,18 +133,5 @@ public class GameController: ControllerBase, IGameController
 
         firstPlayerCells.IntersectWith(secondPlayerCells);
         return firstPlayerCells.Count == 0;
-    }
-
-    private Game? ConvertFromJson(string data)
-    {
-        try
-        {
-            return new Game(data);
-        }
-        catch (NullReferenceException)
-        {
-            _logger.LogError("Necessary fields not found");
-            return null;
-        }
     }
 }
