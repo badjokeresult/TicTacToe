@@ -1,10 +1,11 @@
 version: '3'
 
 services:
-  web-api:
-    container_name: web-api
-    image: web-api
+  tic-tac-toe-app:
+    container_name: tic-tac-toe-app
+    image: web-api:latest
     build:
+      context: .
       dockerfile: Dockerfile
     ports:
       - "3500:80"
@@ -28,3 +29,6 @@ services:
 networks:
   postgres:
     driver: bridge
+  
+volumes:
+  postgres:
